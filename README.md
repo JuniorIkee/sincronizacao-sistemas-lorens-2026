@@ -44,7 +44,9 @@ python -m scripts.gerar.sincronização.varredura_sincronizacao_rede_lorenz_anel
 - `figuras_acoplamento_unilateral_sem_ativacao`: figuras de uma simulação com
   o acoplamento ligado desde o início.
 - `sincronizacao_rede_lorenz_anel`: figuras de uma simulação da rede de Lorenz
-  em anel.
+  em anel. Os gráficos temporais indicam quando o erro global permanece
+  abaixo de `1e-3` por pelo menos `2` unidades de tempo; no exemplo com
+  `K = 60`, isso ocorre em `t = 30.87`.
 - `varredura_acoplamento_unilateral_ativacao_tardia`: varredura de K para os
   dois sistemas com ativação tardia do acoplamento.
 - `varredura_acoplamento_unilateral_sem_ativacao`: varredura de K com o

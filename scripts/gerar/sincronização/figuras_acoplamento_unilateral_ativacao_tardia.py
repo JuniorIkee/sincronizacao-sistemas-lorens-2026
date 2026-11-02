@@ -124,7 +124,7 @@ def marcar_sincronizacao(tempo_sincronizacao):
 # ============================================================
 
 # K = 10 mostra a convergência após a ativação do acoplamento.
-K = 10.0
+K = 5.0
 
 tempo, x1, y1, z1, x2, y2, z2 = simular(K)
 
@@ -214,7 +214,7 @@ marcar_sincronizacao(tempo_sincronizacao)
 
 plt.xlabel("Tempo")
 plt.ylabel("Erro global E(t) (escala logarítmica)")
-plt.title(f"Erro global de sincronização após ativação tardia - K = {K}")
+plt.title(f"Erro global de sincronização - K = {K}")
 plt.legend()
 plt.grid(alpha=0.3)
 plt.savefig(PASTA_IMAGENS / f"erros_globais_K_{K}.png", dpi=300)

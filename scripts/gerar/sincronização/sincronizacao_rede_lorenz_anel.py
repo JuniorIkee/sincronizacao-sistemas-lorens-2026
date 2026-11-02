@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scripts.caminhos import preparar_pasta_imagens
 from scripts.modelos.anel import (
     calcular_metricas_rede,
+    calcular_tempo_sincronizacao,
     lorenz_anel as calcular_derivadas_anel,
     simular_anel,
 )
@@ -30,6 +31,8 @@ t = np.arange(t_inicial, t_final + dt, dt)
 
 # Os sistemas evoluem separadamente até 20 s.
 tempo_ativacao_acoplamento = 20.0
+LIMIAR_SINCRONIZACAO = 1e-3
+PERMANENCIA_SINCRONIZACAO = 2.0
 
 # Força usada nos gráficos individuais.
 # O anel costuma exigir K maior do que o sistema com apenas dois Lorenz.
@@ -96,12 +99,56 @@ def marcar_ativacao():
     )
 
 
+def marcar_sincronizacao(tempo_sincronizacao):
+    """Destaca os instantes em que o erro global satisfaz o critério."""
+    if np.isnan(tempo_sincronizacao):
+        return
+
+    plt.axvspan(
+        tempo_sincronizacao,
+        t_final,
+        color="seagreen",
+        alpha=0.08,
+        label="E_rede sincronizado",
+    )
+    plt.axvline(
+        tempo_sincronizacao,
+        color="seagreen",
+        linestyle=":",
+        linewidth=1.6,
+        label=f"Início da sincronização (t = {tempo_sincronizacao:.2f})",
+    )
+
+
 # ============================================================
 # 5. SIMULAÇÃO PRINCIPAL
 # ============================================================
 
 tempo, estados = simular(K_exemplo)
 metricas = calcular_metricas_rede(estados)
+tempo_ate_sincronizacao = calcular_tempo_sincronizacao(
+    tempo,
+    metricas["erro_rede"],
+    tempo_ativacao_acoplamento,
+    dt,
+    limiar=LIMIAR_SINCRONIZACAO,
+    permanencia=PERMANENCIA_SINCRONIZACAO,
+)
+tempo_sincronizacao = (
+    np.nan
+    if np.isnan(tempo_ate_sincronizacao)
+    else tempo_ativacao_acoplamento + tempo_ate_sincronizacao
+)
+
+if np.isnan(tempo_sincronizacao):
+    print("O critério de sincronização da rede não foi atingido nesta simulação.")
+else:
+    print(
+        f"Rede sincronizada segundo o erro global em t = "
+        f"{tempo_sincronizacao:.2f}: E_rede(t) < "
+        f"{LIMIAR_SINCRONIZACAO:g} por pelo menos "
+        f"{PERMANENCIA_SINCRONIZACAO:g} unidades de tempo."
+    )
 
 x = estados[:, 0, :]
 y = estados[:, 1, :]
@@ -127,6 +174,7 @@ plt.plot(
 )
 
 marcar_ativacao()
+marcar_sincronizacao(tempo_sincronizacao)
 plt.xlabel("Tempo")
 plt.ylabel("x")
 plt.title(f"Séries temporais dos {N} Lorenz em anel, K = {K_exemplo:g}")
@@ -146,12 +194,20 @@ plt.semilogy(tempo, metricas["erro_rede"] + 1e-16,
              label="Erro em relação à média")
 plt.semilogy(tempo, metricas["erro_vizinhos"] + 1e-16,
              label="Erro entre vizinhos", alpha=0.8)
+plt.axhline(
+    LIMIAR_SINCRONIZACAO,
+    color="firebrick",
+    linestyle="--",
+    linewidth=1.2,
+    label=f"Limiar E_rede = {LIMIAR_SINCRONIZACAO:g}",
+)
 marcar_ativacao()
+marcar_sincronizacao(tempo_sincronizacao)
 plt.xlabel("Tempo")
 plt.ylabel("Erro de sincronização")
 plt.title(f"Sincronização global do anel, K = {K_exemplo:g}")
 plt.grid(alpha=0.3, which="both")
-plt.legend()
+plt.legend(loc="lower left", fontsize=9)
 plt.tight_layout()
 plt.savefig(PASTA_IMAGENS / "erro_global_anel.png", dpi=300)
 plt.show()
@@ -166,6 +222,7 @@ plt.semilogy(tempo, metricas["desvio_x"] + 1e-16, label="Desvio padrão de x")
 plt.semilogy(tempo, metricas["desvio_y"] + 1e-16, label="Desvio padrão de y")
 plt.semilogy(tempo, metricas["desvio_z"] + 1e-16, label="Desvio padrão de z")
 marcar_ativacao()
+marcar_sincronizacao(tempo_sincronizacao)
 plt.xlabel("Tempo")
 plt.ylabel("Desvio padrão entre osciladores")
 plt.title(f"Dispersão dos estados da rede, K = {K_exemplo:g}")
@@ -192,9 +249,19 @@ plt.axvline(
     tempo_ativacao_acoplamento,
     color="black",
     linestyle="--",
-    linewidth=1.2
+    linewidth=1.2,
+    label=f"Anel ligado (t = {tempo_ativacao_acoplamento:g})",
 )
+if not np.isnan(tempo_sincronizacao):
+    plt.axvline(
+        tempo_sincronizacao,
+        color="seagreen",
+        linestyle=":",
+        linewidth=1.6,
+        label=f"Sincronização (t = {tempo_sincronizacao:.2f})",
+    )
 plt.colorbar(imagem, label="Valor de x")
+plt.legend()
 plt.xlabel("Tempo")
 plt.ylabel("Oscilador")
 plt.yticks(np.arange(1, N + 1))
