@@ -1,0 +1,3 @@
+documentos/
+**/__pycache__/
+*.py[cod]
